@@ -12,7 +12,7 @@ import os
 import sys
 
 from telethon import TelegramClient, events
-from telethon.errors import ChatForwardsRestrictedError, FloodWaitError
+from telethon.errors import FloodWaitError, RPCError
 from telethon.sessions import StringSession
 
 # ---------- Logging ----------
@@ -72,7 +72,9 @@ async def handler(event):
             )
             logger.info(f"✓ Forwarded msg {event.message.id} from @{source_name}")
 
-        except ChatForwardsRestrictedError:
+        except RPCError as rpc_err:
+            if rpc_err.message != "CHAT_FORWARDS_RESTRICTED":
+                raise
             logger.info(
                 f"Forwarding restricted for @{source_name}, sending as new message"
             )
