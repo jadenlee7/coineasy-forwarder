@@ -12,7 +12,7 @@ import os
 import sys
 
 from telethon import TelegramClient, events
-from telethon.errors import FloodWaitError
+from telethon.errors import FloodWaitError, AuthKeyDuplicatedError
 from telethon.sessions import StringSession
 
 # ---------- Logging ----------
@@ -45,6 +45,8 @@ if not API_ID or not API_HASH:
 if not SESSION_STRING:
     logger.error("TELETHON_SESSION_STRING must be set (run generate_session.py locally first)")
     sys.exit(1)
+
+SESSION_STRING = SESSION_STRING.strip()
 
 API_ID = int(API_ID)
 
@@ -101,7 +103,17 @@ async def handler(event):
 
 
 async def main():
-    await client.start()
+    try:
+        await client.start()
+    except AuthKeyDuplicatedError:
+        logger.error(
+            "SESSION EXPIRED: The session string was used from multiple "
+            "IP addresses and is now invalid. Please run generate_session.py "
+            "to create a NEW session string and update TELETHON_SESSION_STRING "
+            "in Railway environment variables."
+        )
+        sys.exit(1)
+
     me = await client.get_me()
     logger.info(f"Logged in as {me.username or me.first_name} (id={me.id})")
     logger.info(f"Destination: {DESTINATION}")
