@@ -12,7 +12,7 @@ import os
 import sys
 
 from telethon import TelegramClient, events
-from telethon.errors import FloodWaitError
+from telethon.errors import ChatForwardsRestrictedError, FloodWaitError
 from telethon.sessions import StringSession
 
 # ---------- Logging ----------
@@ -64,11 +64,35 @@ async def handler(event):
         chat = await event.get_chat()
         source_name = getattr(chat, "username", None) or getattr(chat, "title", "unknown")
 
-        await client.forward_messages(
-            entity=DESTINATION,
-            messages=event.message,
-        )
-        logger.info(f"✓ Forwarded msg {event.message.id} from @{source_name}")
+        try:
+            await client.forward_messages(
+                entity=DESTINATION,
+                messages=event.message,
+                from_peer=chat,
+            )
+            logger.info(f"✓ Forwarded msg {event.message.id} from @{source_name}")
+
+        except ChatForwardsRestrictedError:
+            logger.info(
+                f"Forwarding restricted for @{source_name}, sending as new message"
+            )
+            prefix = f"[{source_name}]\n"
+            msg = event.message
+
+            if msg.media:
+                await client.send_message(
+                    entity=DESTINATION,
+                    message=prefix + (msg.text or ""),
+                    file=msg.media,
+                )
+            else:
+                await client.send_message(
+                    entity=DESTINATION,
+                    message=prefix + (msg.text or ""),
+                )
+            logger.info(
+                f"✓ Sent msg {msg.id} from @{source_name} as new message (restricted)"
+            )
 
     except FloodWaitError as e:
         logger.warning(f"FloodWait: sleeping {e.seconds}s")
