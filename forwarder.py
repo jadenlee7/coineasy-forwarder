@@ -12,7 +12,7 @@ import os
 import sys
 
 from telethon import TelegramClient, events
-from telethon.errors import FloodWaitError, RPCError
+from telethon.errors import FloodWaitError
 from telethon.sessions import StringSession
 
 # ---------- Logging ----------
@@ -68,15 +68,12 @@ async def handler(event):
             await client.forward_messages(
                 entity=DESTINATION,
                 messages=event.message,
-                from_peer=chat,
             )
             logger.info(f"✓ Forwarded msg {event.message.id} from @{source_name}")
-
-        except RPCError as rpc_err:
-            if rpc_err.message != "CHAT_FORWARDS_RESTRICTED":
-                raise
-            logger.info(
-                f"Forwarding restricted for @{source_name}, sending as new message"
+        except Exception as fwd_err:
+            logger.warning(
+                f"forward_messages failed for @{source_name}: {fwd_err}. "
+                f"Falling back to send_message."
             )
             prefix = f"[{source_name}]\n"
             msg = event.message
@@ -93,7 +90,7 @@ async def handler(event):
                     message=prefix + (msg.text or ""),
                 )
             logger.info(
-                f"✓ Sent msg {msg.id} from @{source_name} as new message (restricted)"
+                f"✓ Sent msg {msg.id} from @{source_name} as new message (fallback)"
             )
 
     except FloodWaitError as e:
