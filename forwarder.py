@@ -10,6 +10,7 @@ import asyncio
 import logging
 import os
 import sys
+from collections import defaultdict
 
 from telethon import TelegramClient, events
 from telethon.errors import FloodWaitError, AuthKeyDuplicatedError
@@ -58,28 +59,50 @@ except (TypeError, ValueError):
 
 client = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
 
+# ---------- Album buffering ----------
+# Telegram delivers album posts as separate messages that share a `grouped_id`.
+# We collect them briefly so the whole album is forwarded as a single post.
+ALBUM_FLUSH_DELAY = 2.5  # seconds to wait for sibling album messages
+_album_buffers: dict[int, list] = defaultdict(list)
+_album_tasks: dict[int, asyncio.Task] = {}
+_album_lock = asyncio.Lock()
 
-@client.on(events.NewMessage(chats=SOURCE_CHANNELS))
-async def handler(event):
-    """Forward every new message from source channels to destination."""
+
+async def _forward_messages(messages, source_name):
+    """Forward one or more messages (single post or album) to DESTINATION."""
+    messages = sorted(messages, key=lambda m: m.id)
+    first = messages[0]
     try:
-        chat = await event.get_chat()
-        source_name = getattr(chat, "username", None) or getattr(chat, "title", "unknown")
-
-        try:
-            await client.forward_messages(
+        await client.forward_messages(
+            entity=DESTINATION,
+            messages=messages,
+            from_peer=await first.get_input_chat(),
+        )
+        ids = ", ".join(str(m.id) for m in messages)
+        kind = "album" if len(messages) > 1 else "msg"
+        logger.info(f"✓ Forwarded {kind} [{ids}] from @{source_name}")
+    except Exception as fwd_err:
+        logger.warning(
+            f"forward_messages failed for @{source_name}: {fwd_err}. "
+            f"Falling back to send_message."
+        )
+        prefix = f"[{source_name}]\n"
+        if len(messages) > 1:
+            files = [m.media for m in messages if m.media is not None]
+            caption = prefix + (
+                next((m.text for m in messages if m.text), "") or ""
+            )
+            await client.send_file(
                 entity=DESTINATION,
-                messages=event.message,
+                file=files,
+                caption=caption,
             )
-            logger.info(f"✓ Forwarded msg {event.message.id} from @{source_name}")
-        except Exception as fwd_err:
-            logger.warning(
-                f"forward_messages failed for @{source_name}: {fwd_err}. "
-                f"Falling back to send_message."
+            logger.info(
+                f"✓ Sent album [{', '.join(str(m.id) for m in messages)}] "
+                f"from @{source_name} as new message (fallback)"
             )
-            prefix = f"[{source_name}]\n"
-            msg = event.message
-
+        else:
+            msg = messages[0]
             if msg.media:
                 await client.send_message(
                     entity=DESTINATION,
@@ -94,6 +117,46 @@ async def handler(event):
             logger.info(
                 f"✓ Sent msg {msg.id} from @{source_name} as new message (fallback)"
             )
+
+
+async def _flush_album(group_id: int, source_name: str):
+    """Wait briefly for more album siblings, then forward the collected batch."""
+    try:
+        await asyncio.sleep(ALBUM_FLUSH_DELAY)
+        async with _album_lock:
+            messages = _album_buffers.pop(group_id, [])
+            _album_tasks.pop(group_id, None)
+        if not messages:
+            return
+        try:
+            await _forward_messages(messages, source_name)
+        except FloodWaitError as e:
+            logger.warning(f"FloodWait: sleeping {e.seconds}s")
+            await asyncio.sleep(e.seconds + 1)
+        except Exception as e:
+            logger.exception(f"Forward failed: {e}")
+    except asyncio.CancelledError:
+        raise
+
+
+@client.on(events.NewMessage(chats=SOURCE_CHANNELS))
+async def handler(event):
+    """Forward every new message from source channels to destination."""
+    try:
+        chat = await event.get_chat()
+        source_name = getattr(chat, "username", None) or getattr(chat, "title", "unknown")
+
+        group_id = getattr(event.message, "grouped_id", None)
+        if group_id:
+            async with _album_lock:
+                _album_buffers[group_id].append(event.message)
+                if group_id not in _album_tasks:
+                    _album_tasks[group_id] = asyncio.create_task(
+                        _flush_album(group_id, source_name)
+                    )
+            return
+
+        await _forward_messages([event.message], source_name)
 
     except FloodWaitError as e:
         logger.warning(f"FloodWait: sleeping {e.seconds}s")
