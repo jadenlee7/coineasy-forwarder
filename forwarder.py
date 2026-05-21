@@ -33,6 +33,7 @@ SOURCE_CHANNELS = [
     "WalletvKR",
     "squid_kor_update",
     "YellowKorea_ann",
+    "Origintrailkr",
 ]
 
 # Destination = CoinEasy announcement channel (@coiniseasy)
