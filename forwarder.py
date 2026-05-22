@@ -16,6 +16,8 @@ from telethon import TelegramClient, events
 from telethon.errors import FloodWaitError, AuthKeyDuplicatedError
 from telethon.sessions import StringSession
 
+from ot_cross_drop import register as register_ot
+
 # ---------- Logging ----------
 logging.basicConfig(
     level=logging.INFO,
@@ -59,6 +61,8 @@ except (TypeError, ValueError):
     pass
 
 client = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
+
+register_ot(client)
 
 # ---------- Album buffering ----------
 # Telegram delivers album posts as separate messages that share a `grouped_id`.
