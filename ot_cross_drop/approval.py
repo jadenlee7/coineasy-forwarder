@@ -136,9 +136,11 @@ def register(client):
 
     @client.on(events.NewMessage(
         pattern=r'^/ot(approve|reject|edit)\s+(\d+)(?:\s+(.+))?',
-        chats=APPROVAL_CHAT_ID,
     ))
     async def on_text_command(event):
+        # chat ID check (chats= filter removed to avoid entity resolve blocking)
+        if event.chat_id != APPROVAL_CHAT_ID:
+            return
         if event.sender_id not in ADMIN_USER_IDS:
             await event.reply("⚠️ Not authorized.")
             return
