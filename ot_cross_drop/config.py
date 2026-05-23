@@ -20,7 +20,7 @@ TARGET_CHANNELS = [
     if ch.strip()
 ]
 
-APPROVAL_CHAT_ID = int(os.getenv("OT_APPROVAL_CHAT_ID", "0"))
+APPROVAL_CHAT_ID = int(os.environ["OT_APPROVAL_CHAT_ID"].strip())
 ADMIN_USER_IDS = [
     int(x) for x in os.getenv("OT_ADMIN_USER_IDS", "").split(",") if x.strip()
 ]

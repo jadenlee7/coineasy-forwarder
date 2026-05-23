@@ -94,12 +94,34 @@ create index on ot_cross_drop_metrics (kr_msg_id);
 
 Railway forwarder 서비스 redeploy. 별도 서비스 안 만듦, 기존 worker가 OT 핸들러까지 함께 처리.
 
+## Approval flow
+
+승인 채팅(`OT_APPROVAL_CHAT_ID`)에 drop draft 도착 → 텍스트 명령으로 처리:
+
+| 명령 | 동작 |
+|---|---|
+| `/otapprove <kr_msg_id>` | 글로벌 채널 발송 + metrics 트래킹 시작 |
+| `/otreject <kr_msg_id>` | pending 큐에서 삭제, 발송 안 함 |
+| `/otedit <kr_msg_id> <new text>` | drop_msg 교체 후 즉시 발송 |
+
+`<kr_msg_id>`는 preview 메시지 첫 줄(`id: ...`)에 표시됨.
+
 ## Phase 2 후보
 
 - 변형 메시지 A/B 자동 비교 (T+24h winner 자동 채택)
 - `@coiniseasy` X에 동시 cross-post
 - Slack 알림 (발송/실패/임계점)
 - Squid/Yellow 클라이언트로 멀티테넌트 확장 → `coineasy-content-engine` 통합
+
+## Known limitations
+
+**Userbot inline keyboard**: 현재 송신자 계정이 userbot이라 Telegram MTProto가 inline keyboard 버튼을 렌더링하지 않음 (bot account 전용 기능). 그래서 텍스트 명령(`/otapprove`, `/otreject`, `/otedit`)으로 처리함. 콜백 핸들러 코드(`on_button`)는 향후 bot 토큰 마이그레이션 시를 위해 유지.
+
+**Future bot-account migration**: 별도 bot 토큰(@xxx_bot)을 만들어 동일 채널에 admin으로 넣으면 inline keyboard 동작 복구. 그때:
+1. 새 bot 세션을 별도 `TelegramClient`로 띄우거나
+2. 동일 forwarder에서 두 번째 client 인스턴스 추가
+
+2가지 옵션이 있고, 결정은 사용 패턴 보고 추후. `on_button` 핸들러는 코드 수정 없이 동작.
 
 ## Safety
 
