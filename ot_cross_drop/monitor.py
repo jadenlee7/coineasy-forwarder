@@ -46,7 +46,6 @@ def register(client):
             client=client,
             kr_msg_id=msg.id,
             tg_link=tg_permalink,
-            x_link=x_link,
             preview_text=text[:200],
         )
 
