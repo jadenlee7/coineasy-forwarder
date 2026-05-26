@@ -176,8 +176,11 @@ def register(client):
             pending.pop(pending_id, None)
             await event.reply(_format_send_result(kr_msg_id, results, edited=True))
 
-    @client.on(events.NewMessage(chats=APPROVAL_CHAT_ID))
+    @client.on(events.NewMessage())
     async def on_edit_reply(event):
+        # chat ID check (chats= filter removed to avoid entity resolve blocking)
+        if event.chat_id != APPROVAL_CHAT_ID:
+            return
         if (event.text or "").lstrip().startswith("/ot"):
             return
         if event.sender_id not in ADMIN_USER_IDS:
