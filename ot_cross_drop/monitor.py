@@ -36,18 +36,16 @@ def register(client):
             x_link = msg.web_preview.url
 
         tg_permalink = f"https://t.me/{SOURCE_CHANNEL.lstrip('@')}/{msg.id}"
-        drop_link = x_link or tg_permalink
 
         logger.info(
-            "[ot-cross-drop] KR post id=%s, x_link=%s, using=%s",
-            msg.id, x_link, drop_link,
+            "[ot-cross-drop] KR post id=%s, tg_link=%s, x_link=%s",
+            msg.id, tg_permalink, x_link,
         )
 
         await enqueue_for_approval(
             client=client,
             kr_msg_id=msg.id,
-            drop_link=drop_link,
-            source_was_x=bool(x_link),
+            tg_link=tg_permalink,
             preview_text=text[:200],
         )
 
