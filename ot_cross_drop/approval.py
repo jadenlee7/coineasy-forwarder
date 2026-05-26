@@ -29,18 +29,23 @@ def _format_send_result(kr_msg_id, results, edited):
 async def enqueue_for_approval(
     client,
     kr_msg_id: int,
-    drop_link: str,
-    source_was_x: bool,
+    tg_link: str,
+    x_link: str | None,
     preview_text: str,
 ) -> None:
     """Render draft and send to admin chat (or auto-dispatch if enabled)."""
-    drop_msg = render(drop_link)
+    drop_msg = render(tg_link, x_link)
+
+    # ot_cross_drops.drop_link records the X engagement target when present,
+    # otherwise the TG announcement permalink.
+    drop_link = x_link or tg_link
 
     pending_id = f"otdrop_{kr_msg_id}"
     pending[pending_id] = {
         "kr_msg_id": kr_msg_id,
         "drop_link": drop_link,
-        "source_was_x": source_was_x,
+        "tg_link": tg_link,
+        "x_link": x_link,
         "drop_msg": drop_msg,
     }
 
@@ -54,11 +59,12 @@ async def enqueue_for_approval(
         pending.pop(pending_id, None)
         return
 
-    source_label = "X link" if source_was_x else "TG fallback"
+    x_status = x_link if x_link else "⚠️ none found (announcement only)"
     preview = (
         f"📝 **[OT cross-drop] New KR post**  `id: {kr_msg_id}`\n\n"
         f"_Preview_: {preview_text}{'...' if len(preview_text) >= 200 else ''}\n"
-        f"_Drop link_: {drop_link} ({source_label})\n\n"
+        f"_TG announcement_: {tg_link}\n"
+        f"_X link_: {x_status}\n\n"
         f"────────\n"
         f"**Draft for global channels:**\n\n"
         f"{drop_msg}\n"
