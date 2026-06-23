@@ -36,6 +36,7 @@ SOURCE_CHANNELS = [
     "squid_kor_update",
     "YellowKorea_ann",
     "Origintrailkr",
+    "babylonBTC",
 ]
 
 # Destination = CoinEasy announcement channel (@coiniseasy)
