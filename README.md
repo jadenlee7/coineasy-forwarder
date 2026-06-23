@@ -1,6 +1,6 @@
 # CoinEasy Channel Forwarder Bot
 
-Wallet V KR / Squid KR / Yellow KR / OriginTrail KR 채널의 새 공지를 **@coiniseasy** 로 자동 포워딩합니다.
+Wallet V KR / Squid KR / Yellow KR / OriginTrail KR / Babylon 채널의 새 공지를 **@coiniseasy** 로 자동 포워딩합니다.
 
 ## 작동 방식
 - Telethon **user account** 사용 (봇 admin 권한 불필요)
@@ -13,6 +13,7 @@ Wallet V KR / Squid KR / Yellow KR / OriginTrail KR 채널의 새 공지를 **@c
 - @squid_kor_update (소스)
 - @YellowKorea_ann (소스)
 - @Origintrailkr (소스)
+- @babylonBTC (소스)
 - @coiniseasy (목적지 — **포스팅 권한 필요, 즉 admin이거나 본인 소유**)
 
 ## 1단계: 로컬에서 세션 문자열 생성 (1회만)
@@ -46,6 +47,8 @@ python generate_session.py
 ✓ source @WalletvKR -> ...
 ✓ source @squid_kor_update -> ...
 ✓ source @YellowKorea_ann -> ...
+✓ source @Origintrailkr -> ...
+✓ source @babylonBTC -> ...
 ✓ destination -> ...
 Listening for new messages...
 ```
