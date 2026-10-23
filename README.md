@@ -1,10 +1,11 @@
 # CoinEasy Channel Forwarder Bot
 
-Wallet V KR / Squid KR / Yellow KR / OriginTrail KR / Babylon 채널의 새 공지를 **@coiniseasy** 로 자동 포워딩합니다.
+Wallet V KR / Squid KR / Yellow KR / OriginTrail KR / Babylon / Madang 채널의 새 공지를 **@coiniseasy** 로 자동 포워딩합니다.
 
 ## 작동 방식
 - Telethon **user account** 사용 (봇 admin 권한 불필요)
 - 원본 그대로 forward → 출처 자동 표시
+- Madang 전달 오류는 결과 확인이 필요하므로 복사 게시로 재시도하지 않습니다.
 - StringSession 방식 → Railway에 세션 파일 업로드 불필요
 
 ## 사전 준비
@@ -14,6 +15,7 @@ Wallet V KR / Squid KR / Yellow KR / OriginTrail KR / Babylon 채널의 새 공�
 - @YellowKorea_ann (소스)
 - @Origintrailkr (소스)
 - @babylonBTC (소스)
+- @madangfunann (소스 — 새 공지만 처리, 기존 공지 소급 전달 없음)
 - @coiniseasy (목적지 — **포스팅 권한 필요, 즉 admin이거나 본인 소유**)
 
 ## 1단계: 로컬에서 세션 문자열 생성 (1회만)
@@ -49,12 +51,17 @@ python generate_session.py
 ✓ source @YellowKorea_ann -> ...
 ✓ source @Origintrailkr -> ...
 ✓ source @babylonBTC -> ...
+✓ source @madangfunann -> ...
 ✓ destination -> ...
 Listening for new messages...
 ```
 
 ## 소스 채널 추가
 `forwarder.py` 의 `SOURCE_CHANNELS` 리스트에 추가 → redeploy.
+
+## 로컬 검증
+`python3 -B -m unittest discover -s tests -v`는 Telethon을 가져오거나 세션에
+접속하지 않고 전달 함수와 소스 목록을 검증합니다.
 
 ## 보안 주의
 `TELETHON_SESSION_STRING` 은 본인 텔레그램 계정 로그인 권한과 동일합니다.

@@ -37,6 +37,7 @@ SOURCE_CHANNELS = [
     "YellowKorea_ann",
     "Origintrailkr",
     "babylonBTC",
+    "madangfunann",
 ]
 
 # Destination = CoinEasy announcement channel (@coiniseasy)
@@ -88,6 +89,11 @@ async def _forward_messages(messages, source_name):
         kind = "album" if len(messages) > 1 else "msg"
         logger.info(f"✓ Forwarded {kind} [{ids}] from @{source_name}")
     except Exception as fwd_err:
+        if source_name.lower() == "madangfunann":
+            logger.error(
+                "Madang forward delivery unknown/review required; no copy fallback"
+            )
+            raise
         logger.warning(
             f"forward_messages failed for @{source_name}: {fwd_err}. "
             f"Falling back to send_message."
